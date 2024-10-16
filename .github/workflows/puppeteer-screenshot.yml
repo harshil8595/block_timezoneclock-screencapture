@@ -31,4 +31,10 @@ jobs:
         git config --global user.name "Harshil Patel"
         git add screenshots/*
         git commit -m "Automated screenshot capture"
-        git push
+
+    # Push changes back to the repository
+    - name: Push changes
+      uses: ad-m/github-push-action@v1
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: main  # Specify the branch to push changes to
