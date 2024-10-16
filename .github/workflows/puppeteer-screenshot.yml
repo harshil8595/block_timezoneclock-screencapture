@@ -3,7 +3,7 @@ name: Capture Webpage Screenshot
 # Set the trigger for the action (schedule in cron format: minute hour day month day_of_week)
 on:
   schedule:
-    - cron: '0 12 * * *'  # This will run daily at 12:00 UTC
+    - cron: '* * * * *'  # This will run daily at 12:00 UTC
 
 jobs:
   capture:
