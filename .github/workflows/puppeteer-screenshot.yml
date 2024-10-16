@@ -1,9 +1,10 @@
 name: Capture Webpage Screenshot
 
-# Set the trigger for the action (schedule in cron format: minute hour day month day_of_week)
+# Trigger the workflow manually or on a schedule
 on:
   schedule:
     - cron: '* * * * *'  # This will run daily at 12:00 UTC
+  workflow_dispatch:  # Allows manual trigger of the workflow
 
 jobs:
   capture:
@@ -26,8 +27,8 @@ jobs:
 
     - name: Commit the new screenshot
       run: |
-        git config --global user.email "you@example.com"
-        git config --global user.name "Your Name"
+        git config --global user.email "harshil8595@gmail.com"
+        git config --global user.name "Harshil Patel"
         git add screenshots/*
         git commit -m "Automated screenshot capture"
         git push
