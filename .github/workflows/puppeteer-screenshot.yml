@@ -1,0 +1,33 @@
+name: Capture Webpage Screenshot
+
+# Set the trigger for the action (schedule in cron format: minute hour day month day_of_week)
+on:
+  schedule:
+    - cron: '0 12 * * *'  # This will run daily at 12:00 UTC
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js environment
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'  # or any version of Node.js
+
+    - name: Install Puppeteer
+      run: npm install puppeteer
+
+    - name: Run Puppeteer script to capture the screenshot
+      run: node capture.js
+
+    - name: Commit the new screenshot
+      run: |
+        git config --global user.email "you@example.com"
+        git config --global user.name "Your Name"
+        git add screenshots/*
+        git commit -m "Automated screenshot capture"
+        git push
