@@ -34,7 +34,7 @@ jobs:
 
     # Push changes back to the repository
     - name: Push changes
-      uses: ad-m/github-push-action@v1
+      uses: ad-m/github-push-action@v0.8.0
       with:
         github_token: ${{ secrets.GH_TOKEN }}
         branch: main  # Specify the branch to push changes to
