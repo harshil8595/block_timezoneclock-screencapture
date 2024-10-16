@@ -12,7 +12,7 @@ const puppeteer = require('puppeteer');
   const page = await browser.newPage();
 
   // Navigate to the target URL
-  const url = 'https://example.com'; // Replace with the URL you want to capture
+  const url = 'https://moodle.org/plugins/block_timezoneclock'; // Replace with the URL you want to capture
   await page.goto(url, { waitUntil: 'networkidle2' });
 
   // Take a screenshot and save it
