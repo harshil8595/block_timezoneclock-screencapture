@@ -46,7 +46,7 @@ fs.readdir(imagesDir, (err, files) => {
     <!-- Swiper -->
     <div class="swiper">
       <div class="swiper-wrapper">
-        ${images.map(img => `<div class="swiper-slide"><img src="images/${img}" alt="${img}"></div>`).join('')}
+        ${images.map(img => `<div class="swiper-slide"><img src="screenshots/${img}" alt="${img}"></div>`).join("\r\n")}
       </div>
       
       <!-- Add Pagination -->
