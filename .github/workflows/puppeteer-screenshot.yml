@@ -25,11 +25,15 @@ jobs:
     - name: Run Puppeteer script to capture the screenshot
       run: node capture.js
 
+    - name: Build index html page
+      run: node buildindex.js
+
     - name: Commit the new screenshot
       run: |
         git config --global user.email "harshil8595@gmail.com"
         git config --global user.name "Harshil Patel"
         git add screenshots/*
+        git add index.html
         git commit -m "Automated screenshot capture"
 
     # Push changes back to the repository
