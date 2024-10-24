@@ -24,6 +24,12 @@ function getFormattedTimestamp() {
   // Open a new page
   const page = await browser.newPage();
 
+  await page.setCookie({
+    domain: '.moodle.org',
+    name: 'OptanonAlertBoxClosed',
+    value: new Date().toISOString(),    
+  })
+
   // Navigate to the target URL
   const url = 'https://moodle.org/plugins/block_timezoneclock'; // Replace with the URL you want to capture
   await page.goto(url, { waitUntil: 'networkidle2' });
