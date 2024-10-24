@@ -3,7 +3,7 @@ name: Capture Webpage Screenshot
 # Trigger the workflow manually or on a schedule
 on:
   schedule:
-    - cron: '0 * * * *'  # This will run every hour
+    - cron: '0 0 * * *'  # This will run at midnight
   workflow_dispatch:  # Allows manual trigger of the workflow
 
 jobs:
