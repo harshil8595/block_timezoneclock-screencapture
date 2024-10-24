@@ -28,7 +28,7 @@ function getFormattedTimestamp() {
     domain: '.moodle.org',
     name: 'OptanonAlertBoxClosed',
     value: new Date().toISOString(),    
-  })
+  });
 
   // Navigate to the target URL
   const url = 'https://moodle.org/plugins/block_timezoneclock'; // Replace with the URL you want to capture
