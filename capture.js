@@ -28,6 +28,10 @@ function getFormattedTimestamp() {
     domain: '.moodle.org',
     name: 'OptanonAlertBoxClosed',
     value: new Date().toISOString(),    
+  }, {
+    domain: '.moodle.org',
+    name: 'OptanonConsent',
+    value: encodeURIComponent('isGpcEnabled=0&datestamp=Thu+Oct+24+2024+23:00:29+GMT+0530+(India+Standard+Time)&version=202406.1.0&browserGpcFlag=0&isIABGlobal=false&consentId=2b0f89d2-0010-4bec-bd8c-027ea1641894&interactionCount=1&isAnonUser=1&landingPath=NotLandingPage&groups=C0002:1,C0004:1,C0001:1,C0003:1&hosts=H16:1,H26:1&genVendors=&intType=1'),
   });
 
   // Navigate to the target URL
