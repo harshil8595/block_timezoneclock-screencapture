@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>File Manager with Keyboard Navigation</title>
+  <title>File Manager with Loader</title>
   <!-- Include Bootstrap CSS for styling and modals -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
@@ -46,11 +46,25 @@
     .nav-next {
       right: 10px;
     }
+    .loader {
+      display: none;
+      margin: 0 auto;
+      width: 50px;
+      height: 50px;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
   <div class="container mt-5">
-    <h1 class="text-center">File Manager with Keyboard Navigation</h1>
+    <h1 class="text-center">File Manager with Loader</h1>
     <div id="file-list" class="mt-4"></div>
   </div>
 
@@ -63,7 +77,8 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body text-center">
-          <img id="previewImage" class="img-fluid mx-auto d-block" alt="Preview">
+          <div id="loader" class="loader"></div>
+          <img id="previewImage" class="img-fluid mx-auto d-block" alt="Preview" style="display: none;">
           <p id="fileName" class="mt-3 text-muted"></p>
         </div>
         <button id="prevFile" class="nav-arrow nav-prev">&larr;</button>
@@ -115,13 +130,24 @@
 
     function updatePreview() {
       const previewImage = document.getElementById('previewImage');
+      const loader = document.getElementById('loader');
       const fileNameElement = document.getElementById('fileName');
       const modalTitle = document.getElementById('previewModalLabel');
 
       const currentFile = files[currentIndex];
-      previewImage.src = currentFile.download_url;
+      previewImage.style.display = 'none'; // Hide the image initially
+      loader.style.display = 'block'; // Show the loader
+
+      // Set file details
       fileNameElement.textContent = currentFile.name;
       modalTitle.textContent = `Preview: ${currentFile.name}`;
+      previewImage.src = currentFile.download_url;
+
+      // Once the image loads, show it and hide the loader
+      previewImage.onload = () => {
+        loader.style.display = 'none';
+        previewImage.style.display = 'block';
+      };
 
       // Update navigation buttons
       document.getElementById('prevFile').disabled = currentIndex === 0;
