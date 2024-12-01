@@ -188,8 +188,10 @@
     function handleKeyNavigation(event) {
       if (event.key === "ArrowLeft") {
         navigateFile(-1); // Previous file
+        event.stopPropagation();
       } else if (event.key === "ArrowRight") {
         navigateFile(1); // Next file
+        event.stopPropagation();
       }
     }
 
