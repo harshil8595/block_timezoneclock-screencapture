@@ -36,6 +36,27 @@
     .folder-icon {
       margin-right: 10px;
     }
+    /* Overlay loader style */
+    .overlay-loader {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    .spinner-border {
+      width: 3rem;
+      height: 3rem;
+    }
+    #preview-container {
+      position: relative;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
@@ -53,11 +74,17 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body text-center">
-          <div class="my-3">
+          <div class="d-flex my-3">
             <button id="prevBtn" class="btn btn-primary">Prev</button>
-            <button id="nextBtn" class="btn btn-primary">Next</button>
+            <button id="nextBtn" class="btn btn-primary ms-auto">Next</button>
           </div>
-          <img id="previewImage" class="img-fluid mx-auto d-block" alt="Preview">
+          <!-- Image preview with overlay loader -->
+          <div id="preview-container">
+            <div id="loader" class="overlay-loader">
+              <div class="spinner-border" role="status"></div>
+            </div>
+            <img id="previewImage" class="img-fluid mx-auto d-block" alt="Preview" style="display:none;">
+          </div>
         </div>
       </div>
     </div>
@@ -67,11 +94,16 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const apiUrl = "https://api.github.com/repos/harshil8595/block_timezoneclock-screencapture/contents/screenshots?ref=main";
+    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
 
     let currentFileIndex = null;
     let currentFolderId = null;
     let groupedFiles = {};
     let folderIds = [];
+    let preloadedImages = {
+      prev: null,
+      next: null
+    };
 
     // Function to fetch files from the GitHub API
     async function fetchFiles() {
@@ -116,8 +148,8 @@
         folderElement.innerHTML = `
           <div class="folder-item" data-bs-toggle="collapse" data-bs-target="#${folderId}" aria-expanded="false">
             <div class="folder-header">
-              <i id="folder-icon-${date}" class="fas fa-folder folder-icon"></i> 
-              <span> ${date}</span>
+              <i id="folder-icon-${date}" class="fas fa-folder folder-icon"></i>
+              <span>${date}</span>
             </div>
           </div>
           <div class="collapse" id="${folderId}">
@@ -149,7 +181,8 @@
 
       // Add click event listeners for file items
       document.querySelectorAll('.file-item').forEach(item => {
-        item.addEventListener('click', () => {
+        item.addEventListener('click', e => {
+          e.preventDefault();
           const date = item.getAttribute('data-date');
           const index = item.getAttribute('data-index');
           const file = groupedFiles[date][index];
@@ -160,11 +193,26 @@
 
     // Function to open preview modal and navigate folder
     function openPreview(file, folderId) {
-      const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
-      document.getElementById('previewImage').src = file.download_url;
       document.getElementById('modalFileName').textContent = file.name; // Set the file name as modal title
       currentFileIndex = groupedFiles[folderId].findIndex(f => f.name === file.name);
       currentFolderId = folderId;
+
+      const previewImage = document.getElementById('previewImage');
+      const loader = document.getElementById('loader');
+
+      // Show loader and hide the image initially
+      previewImage.style.display = 'none';
+      loader.style.display = 'flex';
+
+      // Set the image source
+      previewImage.src = file.download_url;
+
+      // When the image is fully loaded, hide the loader and show the image
+      previewImage.onload = () => {
+        loader.style.display = 'none';
+        previewImage.style.display = 'block';
+      };
+
       previewModal.show();
 
       // Expand the folder containing the file
@@ -179,45 +227,39 @@
       if (currentFileIndex === null || currentFolderId === null) return;
 
       const files = groupedFiles[currentFolderId];
-      currentFileIndex = (currentFileIndex + offset + files.length) % files.length; // Ensure circular navigation
-      const file = files[currentFileIndex];
+      currentFileIndex += offset;
+
+      // If we are at the last file in the current folder, move to the next folder (or previous if going backward)
+      if (currentFileIndex >= files.length) {
+        const nextFolderIndex = folderIds.indexOf(currentFolderId) + 1;
+        if (nextFolderIndex < folderIds.length) {
+          currentFolderId = folderIds[nextFolderIndex];
+          currentFileIndex = 0;
+        } else {
+          currentFileIndex = 0;
+        }
+      } else if (currentFileIndex < 0) {
+        const prevFolderIndex = folderIds.indexOf(currentFolderId) - 1;
+        if (prevFolderIndex >= 0) {
+          currentFolderId = folderIds[prevFolderIndex];
+          currentFileIndex = files.length - 1;
+        }
+      }
+
+      const file = groupedFiles[currentFolderId][currentFileIndex];
       openPreview(file, currentFolderId);
     }
 
-    // Function to handle key events for navigation (only left/right arrows)
-    function handleKeyNavigation(event) {
-      if (event.key === "ArrowLeft") {
-        navigateFile(-1); // Previous file
-      } else if (event.key === "ArrowRight") {
-        navigateFile(1); // Next file
-      }
-    }
-
-    // Initialize the file manager
-    fetchFiles()
-      .then(files => {
-        groupedFiles = groupFilesByDate(files);
-        renderGroupedFiles(groupedFiles);
-      })
-      .catch(err => {
-        console.error('Error fetching files:', err);
-        document.getElementById('file-group').innerHTML = '<p class="text-danger">Failed to load files.</p>';
-      });
-
-    // Event listeners for the navigation buttons
+    // Event listeners for navigation buttons
     document.getElementById('prevBtn').addEventListener('click', () => navigateFile(-1));
     document.getElementById('nextBtn').addEventListener('click', () => navigateFile(1));
 
-    // Event listener for keyboard navigation (only left and right arrows)
-    document.getElementById('previewModal').addEventListener('shown.bs.modal', () => {
-      // Add the keydown event listener only when the modal is shown
-      // document.addEventListener('keydown', handleKeyNavigation);
+    // Fetch and render files
+    fetchFiles().then(files => {
+      groupedFiles = groupFilesByDate(files);
+      renderGroupedFiles(groupedFiles);
     });
 
-    document.getElementById('previewModal').addEventListener('hidden.bs.modal', () => {
-      // Remove the keydown event listener when the modal is hidden
-      // document.removeEventListener('keydown', handleKeyNavigation);
-    });
   </script>
 </body>
 </html>
