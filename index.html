@@ -53,11 +53,11 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body text-center">
-          <img id="previewImage" class="img-fluid mx-auto d-block" alt="Preview">
-          <div class="mt-3">
+          <div class="my-3">
             <button id="prevBtn" class="btn btn-primary">Prev</button>
             <button id="nextBtn" class="btn btn-primary">Next</button>
           </div>
+          <img id="previewImage" class="img-fluid mx-auto d-block" alt="Preview">
         </div>
       </div>
     </div>
@@ -188,10 +188,8 @@
     function handleKeyNavigation(event) {
       if (event.key === "ArrowLeft") {
         navigateFile(-1); // Previous file
-        event.stopPropagation();
       } else if (event.key === "ArrowRight") {
         navigateFile(1); // Next file
-        event.stopPropagation();
       }
     }
 
@@ -213,12 +211,12 @@
     // Event listener for keyboard navigation (only left and right arrows)
     document.getElementById('previewModal').addEventListener('shown.bs.modal', () => {
       // Add the keydown event listener only when the modal is shown
-      document.addEventListener('keydown', handleKeyNavigation);
+      // document.addEventListener('keydown', handleKeyNavigation);
     });
 
     document.getElementById('previewModal').addEventListener('hidden.bs.modal', () => {
       // Remove the keydown event listener when the modal is hidden
-      document.removeEventListener('keydown', handleKeyNavigation);
+      // document.removeEventListener('keydown', handleKeyNavigation);
     });
   </script>
 </body>
