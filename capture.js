@@ -1,52 +1,223 @@
-// capture.js
-const puppeteer = require('puppeteer');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Manager Grouped by Filename Timestamp</title>
+  <!-- Include Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Include Font Awesome for the folder icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <style>
+    .folder-item {
+      cursor: pointer;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #007bff;
+    }
+    .folder-item:hover {
+      text-decoration: underline;
+    }
+    .file-item {
+      padding: 5px 20px;
+      border-bottom: 1px solid #ddd;
+      cursor: pointer;
+    }
+    .file-item:last-child {
+      border-bottom: none;
+    }
+    .file-item:hover {
+      background-color: #f8f9fa;
+    }
+    .folder-header {
+      display: flex;
+      align-items: center;
+    }
+    .folder-icon {
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+    <h1 class="text-center">File Manager Grouped by Filename Timestamp</h1>
+    <div id="file-group" class="mt-4"></div>
+  </div>
 
-// Helper function to format the date for the filename
-function getFormattedTimestamp() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0'); // Add leading zero
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  
-  return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
-}
+  <!-- Modal for preview -->
+  <div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="modalFileName" class="modal-title">File Preview</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img id="previewImage" class="img-fluid mx-auto d-block" alt="Preview">
+          <div class="mt-3">
+            <button id="prevBtn" class="btn btn-primary">Prev</button>
+            <button id="nextBtn" class="btn btn-primary">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-(async () => {
-  // Launch the browser
-  const browser = await puppeteer.launch({
-    headless: true, // Run in headless mode
-    args: ['--no-sandbox', '--disable-setuid-sandbox'] // Necessary for Puppeteer on GitHub Actions
-  });
+  <!-- Include Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const apiUrl = "https://api.github.com/repos/harshil8595/block_timezoneclock-screencapture/contents/screenshots?ref=main";
 
-  // Open a new page
-  const page = await browser.newPage();
+    let currentFileIndex = null;
+    let currentFolderId = null;
+    let groupedFiles = {};
+    let folderIds = [];
 
-  await page.setCookie({
-    domain: '.moodle.org',
-    name: 'OptanonAlertBoxClosed',
-    value: new Date().toISOString(),    
-  }, {
-    domain: '.moodle.org',
-    name: 'OptanonConsent',
-    value: encodeURIComponent('isGpcEnabled=0&datestamp=Thu+Oct+24+2024+23:00:29+GMT+0530+(India+Standard+Time)&version=202406.1.0&browserGpcFlag=0&isIABGlobal=false&consentId=2b0f89d2-0010-4bec-bd8c-027ea1641894&interactionCount=1&isAnonUser=1&landingPath=NotLandingPage&groups=C0002:1,C0004:1,C0001:1,C0003:1&hosts=H16:1,H26:1&genVendors=&intType=1'),
-  });
+    // Function to fetch files from the GitHub API
+    async function fetchFiles() {
+      const response = await fetch(apiUrl);
+      const files = await response.json();
+      return files;
+    }
 
-  // Navigate to the target URL
-  const url = 'https://moodle.org/plugins/block_timezoneclock'; // Replace with the URL you want to capture
-  await page.goto(url, { waitUntil: 'networkidle2' });
+    // Function to extract date from filename
+    function extractDateFromFilename(filename) {
+      const datePattern = /(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})/;
+      const match = filename.match(datePattern);
+      if (match) {
+        const [_, year, month, day, hours, minutes, seconds] = match;
+        return `${year}-${month}-${day}`; // Group by day (ignore time)
+      }
+      return null; // Return null if the filename doesn't match the expected pattern
+    }
 
-  // Get current timestamp for the screenshot filename
-  const timestamp = getFormattedTimestamp();
+    // Function to group files by the extracted date from the filename
+    function groupFilesByDate(files) {
+      const grouped = {};
+      files.forEach(file => {
+        const date = extractDateFromFilename(file.name);
+        if (date) {
+          if (!grouped[date]) {
+            grouped[date] = [];
+          }
+          grouped[date].push(file);
+        }
+      });
+      return grouped;
+    }
 
-  // Take a screenshot and save it with a timestamp in the filename
-  const screenshotPath = `screenshots/block_timezoneclock_${timestamp}.png`;
-  await page.screenshot({ path: screenshotPath, fullPage: true });
+    // Function to render grouped files in the UI
+    function renderGroupedFiles(groupedFiles) {
+      const fileGroup = document.getElementById('file-group');
+      folderIds = Object.keys(groupedFiles).sort((a, b) => new Date(b) - new Date(a));
+      folderIds.forEach(date => {
+        const folderId = `folder-${date}`;
+        const folderElement = document.createElement('div');
+        folderElement.innerHTML = `
+          <div class="folder-item" data-bs-toggle="collapse" data-bs-target="#${folderId}" aria-expanded="false">
+            <div class="folder-header">
+              <i id="folder-icon-${date}" class="fas fa-folder folder-icon"></i> 
+              <span>📂 ${date}</span>
+            </div>
+          </div>
+          <div class="collapse" id="${folderId}">
+            ${groupedFiles[date]
+              .map(
+                (file, index) => `
+                <div class="file-item" data-index="${index}" data-date="${date}">
+                  ${file.name}
+                </div>
+              `
+              )
+              .join('')}
+          </div>
+        `;
+        fileGroup.appendChild(folderElement);
 
-  console.log(`Screenshot saved as ${screenshotPath}`);
+        // Add event listener to change the icon when folder is toggled
+        const folderCollapse = document.getElementById(folderId);
+        const folderIcon = document.getElementById(`folder-icon-${date}`);
+        folderCollapse.addEventListener('shown.bs.collapse', () => {
+          folderIcon.classList.remove('fa-folder');
+          folderIcon.classList.add('fa-folder-open');
+        });
+        folderCollapse.addEventListener('hidden.bs.collapse', () => {
+          folderIcon.classList.remove('fa-folder-open');
+          folderIcon.classList.add('fa-folder');
+        });
+      });
 
-  // Close the browser
-  await browser.close();
-})();
+      // Add click event listeners for file items
+      document.querySelectorAll('.file-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const date = item.getAttribute('data-date');
+          const index = item.getAttribute('data-index');
+          const file = groupedFiles[date][index];
+          openPreview(file, date);
+        });
+      });
+    }
+
+    // Function to open preview modal and navigate folder
+    function openPreview(file, folderId) {
+      const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+      document.getElementById('previewImage').src = file.download_url;
+      document.getElementById('modalFileName').textContent = file.name; // Set the file name as modal title
+      currentFileIndex = groupedFiles[folderId].findIndex(f => f.name === file.name);
+      currentFolderId = folderId;
+      previewModal.show();
+
+      // Expand the folder containing the file
+      const folderCollapse = document.getElementById(`folder-${folderId}`);
+      const bsCollapse = new bootstrap.Collapse(folderCollapse, {
+        toggle: true,
+      });
+    }
+
+    // Function to navigate to the next or previous file
+    function navigateFile(offset) {
+      if (currentFileIndex === null || currentFolderId === null) return;
+
+      const files = groupedFiles[currentFolderId];
+      currentFileIndex = (currentFileIndex + offset + files.length) % files.length; // Ensure circular navigation
+      const file = files[currentFileIndex];
+      openPreview(file, currentFolderId);
+    }
+
+    // Function to handle key events for navigation (only left/right arrows)
+    function handleKeyNavigation(event) {
+      if (event.key === "ArrowLeft") {
+        navigateFile(-1); // Previous file
+      } else if (event.key === "ArrowRight") {
+        navigateFile(1); // Next file
+      }
+    }
+
+    // Initialize the file manager
+    fetchFiles()
+      .then(files => {
+        groupedFiles = groupFilesByDate(files);
+        renderGroupedFiles(groupedFiles);
+      })
+      .catch(err => {
+        console.error('Error fetching files:', err);
+        document.getElementById('file-group').innerHTML = '<p class="text-danger">Failed to load files.</p>';
+      });
+
+    // Event listeners for the navigation buttons
+    document.getElementById('prevBtn').addEventListener('click', () => navigateFile(-1));
+    document.getElementById('nextBtn').addEventListener('click', () => navigateFile(1));
+
+    // Event listener for keyboard navigation (only left and right arrows)
+    document.getElementById('previewModal').addEventListener('shown.bs.modal', () => {
+      // Add the keydown event listener only when the modal is shown
+      document.addEventListener('keydown', handleKeyNavigation);
+    });
+
+    document.getElementById('previewModal').addEventListener('hidden.bs.modal', () => {
+      // Remove the keydown event listener when the modal is hidden
+      document.removeEventListener('keydown', handleKeyNavigation);
+    });
+  </script>
+</body>
+</html>
